@@ -1,3 +1,5 @@
+package com.tombenpotter.tombenirc;
+
 public class Utils {
 
     public static String getNumbersInString(String message) {

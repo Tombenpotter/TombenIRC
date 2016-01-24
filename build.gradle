@@ -1,0 +1,55 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+    dependencies {
+        
+    }
+}
+
+plugins {
+  id "com.github.johnrengelman.shadow" version "1.2.2"
+}
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+archivesBaseName = app_name
+group = package_group
+description = app_description
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+def build_number = 'CUSTOM'
+
+if (System.getenv('BUILD_NUMBER') != null)
+    build_number = System.getenv('BUILD_NUMBER')
+
+version = "${app_version}-${build_number}"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.apache.logging.log4j:log4j-api:2.3"
+    compile "org.apache.logging.log4j:log4j-core:2.3"
+    compile "org.apache.commons:commons-lang3:3.4"
+    compile "commons-io:commons-io:2.4"
+    compile "com.google.guava:guava:18.0"
+    compile "com.google.code.gson:gson:2.3.1"
+}
+
+jar {
+    classifier = ''
+    manifest.mainAttributes(
+            "com.tombenpotter.tombenirc.Main-Class": "com.tombenpotter.tombenirc.com.tombenpotter.tombenirc.Main",
+            "Description": project.description,
+            "Built-By": System.getProperty('user.name'),
+            "Created-By": "${System.getProperty('java.vm.version')} + (${System.getProperty('java.vm.vendor')})",
+            "Implementation-Title": project.name,
+            "Implementation-Version": project.version
+    )
+}

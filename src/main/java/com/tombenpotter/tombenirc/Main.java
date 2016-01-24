@@ -1,3 +1,5 @@
+package com.tombenpotter.tombenirc;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;

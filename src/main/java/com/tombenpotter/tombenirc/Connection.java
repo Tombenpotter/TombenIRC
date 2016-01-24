@@ -1,3 +1,5 @@
+package com.tombenpotter.tombenirc;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
