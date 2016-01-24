@@ -34,18 +34,18 @@ repositories {
 }
 
 dependencies {
-    compile "org.apache.logging.log4j:log4j-api:2.3"
-    compile "org.apache.logging.log4j:log4j-core:2.3"
+    compile "org.apache.logging.log4j:log4j-api:2.5"
+    compile "org.apache.logging.log4j:log4j-core:2.5"
     compile "org.apache.commons:commons-lang3:3.4"
     compile "commons-io:commons-io:2.4"
-    compile "com.google.guava:guava:18.0"
-    compile "com.google.code.gson:gson:2.3.1"
+    compile "com.google.guava:guava:19.0"
+    compile "com.google.code.gson:gson:2.5"
 }
 
 jar {
     classifier = ''
     manifest.mainAttributes(
-            "com.tombenpotter.tombenirc.Main-Class": "com.tombenpotter.tombenirc.com.tombenpotter.tombenirc.Main",
+            "Main-Class": "com.tombenpotter.tombenirc.Main",
             "Description": project.description,
             "Built-By": System.getProperty('user.name'),
             "Created-By": "${System.getProperty('java.vm.version')} + (${System.getProperty('java.vm.vendor')})",
