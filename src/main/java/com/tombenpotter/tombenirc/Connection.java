@@ -3,6 +3,7 @@ package com.tombenpotter.tombenirc;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Connection {
@@ -35,10 +36,7 @@ public class Connection {
 
         this.currentLine = null;
 
-        //I should use some magic dependency
-        for (String channel : channels) {
-            this.channels.add(channel);
-        }
+        Collections.addAll(this.channels, channels);
 
         try {
             socket = new Socket(serverIP, port);
@@ -82,20 +80,22 @@ public class Connection {
 
     public void loginChecks() {
         boolean isLoginDone = false;
-        while ((currentLine = readFromBuffer()) != null && !isLoginDone) {
-            if (currentLine.startsWith(getServerName())) {
-                switch (Utils.getNumbersInString(currentLine)) {
-                    case "004":
-                        isLoginDone = true;
-                        break;
-                    case "433":
-                        return;
-                    default:
-                        ;
-                }
+        while (!isLoginDone) {
+            if ((currentLine = readFromBuffer()) != null) {
+                if (currentLine.startsWith(getServerName())) {
+                    switch (Utils.getNumbersInString(currentLine)) {
+                        case "004":
+                            isLoginDone = true;
+                            break;
+                        case "433":
+                            return;
+                        default:
+                            ;
+                    }
 
-                if (currentLine.startsWith("PING ")) {
-                    writeToBuffer("PONG " + currentLine.substring(5));
+                    if (currentLine.startsWith("PING ")) {
+                        writeToBuffer("PONG " + currentLine.substring(5));
+                    }
                 }
             }
         }
@@ -158,5 +158,33 @@ public class Connection {
         for (String target : targets) {
             writeToBuffer(":" + username + " INVITE " + user + " " + target);
         }
+    }
+
+    public String getServerIP() {
+        return serverIP;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getLogin() {
+        return login;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public List<String> getChannels() {
+        return channels;
     }
 }
