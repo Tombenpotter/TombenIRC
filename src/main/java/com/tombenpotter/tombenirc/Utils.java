@@ -4,6 +4,7 @@ public class Utils {
 
     public static String getNumbersInString(String message) {
         String result = "";
+        int i = 0;
 
         for (char c : message.toCharArray()) {
             switch (c) {
@@ -17,7 +18,11 @@ public class Utils {
                 case '7':
                 case '8':
                 case '9':
-                    result += c;
+                    if (i < 3) {
+                        result += c;
+                    }
+                    i++;
+                    break;
 
                 default:
                     ;

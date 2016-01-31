@@ -3,7 +3,6 @@ package com.tombenpotter.tombenirc;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Connection {
@@ -23,9 +22,10 @@ public class Connection {
     private Socket socket;
     private BufferedWriter bufferedWriter;
     private BufferedReader bufferedReader;
-    private String currentLine;
 
-    public Connection(String serverIP, int port, String nickname, String login, String username, String realName, String... channels) {
+    public Connection(String serverIP, int port, String nickname, String login, String username, String realName, String... channelsToJoin) {
+        System.out.println("Establishing connection...");
+
         this.serverIP = serverIP;
         this.port = port;
         this.nickname = nickname;
@@ -34,9 +34,9 @@ public class Connection {
         this.realName = realName;
         this.channels = new ArrayList<>();
 
-        this.currentLine = null;
-
-        Collections.addAll(this.channels, channels);
+        for (String channel : channelsToJoin) {
+            this.channels.add(channel);
+        }
 
         try {
             socket = new Socket(serverIP, port);
@@ -46,7 +46,7 @@ public class Connection {
             e.printStackTrace();
         }
 
-        this.serverName = readFromBuffer().split("NOTICE")[0];
+        System.out.println("Connection established.");
     }
 
     public void writeToBuffer(String message) {
@@ -71,35 +71,6 @@ public class Connection {
         return serverName;
     }
 
-    public void connectToServer() {
-        setNickname(nickname);
-        sendUserInfo(username, realName);
-        loginChecks();
-        joinChannels(channels);
-    }
-
-    public void loginChecks() {
-        boolean isLoginDone = false;
-        while (!isLoginDone) {
-            if ((currentLine = readFromBuffer()) != null) {
-                if (currentLine.startsWith(getServerName())) {
-                    switch (Utils.getNumbersInString(currentLine)) {
-                        case "004":
-                            isLoginDone = true;
-                            break;
-                        case "433":
-                            return;
-                        default:
-                            ;
-                    }
-
-                    if (currentLine.startsWith("PING ")) {
-                        writeToBuffer("PONG " + currentLine.substring(5));
-                    }
-                }
-            }
-        }
-    }
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
@@ -110,16 +81,18 @@ public class Connection {
         writeToBuffer("USER " + username + " 0 * :" + realName);
     }
 
-    public void joinChannels(List<String> channels) {
+    public void joinChannels(List<String> channels, boolean addChannelsToList) {
         for (String channel : channels) {
             writeToBuffer("JOIN :" + channel);
-            this.channels.add(channel);
+            if (addChannelsToList) {
+                this.channels.add(channel);
+            }
         }
     }
 
     public void partChannels(String reason, List<String> channels) {
         for (String channel : channels) {
-            writeToBuffer("PART " + channel + " :" + reason);
+            writeToBuffer("PART" + channel + " :" + reason);
             this.channels.remove(channel);
         }
     }
@@ -138,19 +111,19 @@ public class Connection {
 
     public void sendMessage(String message, List<String> targets) {
         for (String target : targets) {
-            writeToBuffer("PRIVMSG" + target + ":" + message);
+            writeToBuffer("PRIVMSG " + target + " :" + message);
         }
     }
 
     public void sendNotice(String message, List<String> targets) {
         for (String target : targets) {
-            writeToBuffer("NOTICE" + target + ":" + message);
+            writeToBuffer("NOTICE " + target + " :" + message);
         }
     }
 
     public void sendAction(String message, List<String> targets) {
         for (String target : targets) {
-            writeToBuffer("ACTION" + target + ":" + message);
+            writeToBuffer("ACTION " + target + " :" + message);
         }
     }
 
@@ -186,5 +159,9 @@ public class Connection {
 
     public List<String> getChannels() {
         return channels;
+    }
+
+    public void setServerName(String serverName) {
+        this.serverName = serverName;
     }
 }
