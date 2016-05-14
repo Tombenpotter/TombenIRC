@@ -15,11 +15,13 @@ public class TombenIRC extends Application {
         primaryStage.setTitle("TombenIRC");
 
         Connection connection = new Connection("irc.esper.net", 6667, "TombenIRCTest", "TombenIRCTest", "TombenDaTest", "TombenDaDerp", "#tehnuttest");
-
         ChatScene chatScene = new ChatScene(new BorderPane(), 500, 500, connection);
 
-        primaryStage.setScene(chatScene);
+        String css = TombenIRC.class.getResource("StyleSheet.css").toExternalForm();
+        chatScene.getStylesheets().clear();
+        chatScene.getStylesheets().add(css);
 
+        primaryStage.setScene(chatScene);
         primaryStage.show();
 
         chatScene.connectToServer();

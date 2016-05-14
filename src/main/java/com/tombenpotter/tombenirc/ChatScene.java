@@ -9,43 +9,40 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class ChatScene extends Scene {
 
     public static final String defaultChannel = "Default";
     public static final String newLine = "\n";
 
-    protected CurrentLineUpdater currentLineUpdater;
+    protected CurrentLineReceiver currentLineReceiver;
     protected Connection connection;
     protected String currentChannel;
 
     protected BorderPane mainWindow;
     protected TextField textField;
     protected StackPane channelsPane;
-    protected HashMap<String, TextArea> textAreaForChannel;
+    protected TreeMap<String, TextArea> textAreaForChannel;
     protected VBox buttonsVBox;
-    protected HashMap<String, Button> buttonForChannel;
+    protected TreeMap<String, Button> buttonForChannel;
 
     public ChatScene(@NamedArg("root") BorderPane root, @NamedArg("width") double width, @NamedArg("height") double height, Connection serverConnection) {
         super(root, width, height);
 
         System.out.println("Initializing ChatScene...");
 
-        this.currentLineUpdater = new CurrentLineUpdater();
         this.connection = serverConnection;
-
-        this.channelsPane = new StackPane();
-        this.buttonsVBox = new VBox();
-        this.textAreaForChannel = new HashMap<>();
-        this.buttonForChannel = new HashMap<>();
         this.currentChannel = defaultChannel;
 
+        this.currentLineReceiver = new CurrentLineReceiver();
+        this.channelsPane = new StackPane();
+        this.buttonsVBox = new VBox();
+        this.textAreaForChannel = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        this.buttonForChannel = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
         this.textField = new TextField();
-        textField.setOnAction(event -> {
+        this.textField.setOnAction(event -> {
             connection.sendMessage(textField.getText(), Collections.singletonList(currentChannel));
             textAreaForChannel.get(currentChannel).appendText(textField.getText());
             textField.clear();
@@ -78,9 +75,7 @@ public class ChatScene extends Scene {
         this.mainWindow.setBottom(textField);
         this.mainWindow.setLeft(buttonsVBox);
 
-        System.out.println("Starting line-reader thread.");
-
-        this.currentLineUpdater.start();
+        this.currentLineReceiver.start();
 
         System.out.println("ChatScene initialized.");
     }
@@ -109,11 +104,11 @@ public class ChatScene extends Scene {
 
         while (!isLoginDone) {
             if (i == 0) {
-                connection.setServerName(currentLineUpdater.getCurrentLine().split("NOTICE")[0]);
+                connection.setServerName(currentLineReceiver.getCurrentLine().split("NOTICE")[0]);
             }
 
-            if (currentLineUpdater.getCurrentLine().startsWith(connection.getServerName())) {
-                switch (Utils.getNumbersInString(currentLineUpdater.getCurrentLine())) {
+            if (currentLineReceiver.getCurrentLine().startsWith(connection.getServerName())) {
+                switch (Utils.getNumbersInString(currentLineReceiver.getCurrentLine())) {
                     case "004":
                         isLoginDone = true;
                         break;
@@ -123,8 +118,8 @@ public class ChatScene extends Scene {
                         ;
                 }
             }
-            if (!pongSent && currentLineUpdater.getCurrentLine().startsWith("PING ")) {
-                connection.writeToBuffer("PONG " + currentLineUpdater.getCurrentLine().substring(5));
+            if (!pongSent && currentLineReceiver.getCurrentLine().startsWith("PING ")) {
+                connection.writeToBuffer("PONG " + currentLineReceiver.getCurrentLine().substring(5));
                 pongSent = true;
             }
             i++;
@@ -145,31 +140,50 @@ public class ChatScene extends Scene {
         }
     }
 
-    public class CurrentLineUpdater implements Runnable {
+    public synchronized void displayMessageOnChannel(String message) {
+        //:Tombenpotter!~Tombenpot@candicejoy.com PRIVMSG #TehNutTest :Example
+
+        if (message.contains("PRIVMSG #")) {
+            String username = message.substring(1, message.indexOf("!"));
+            String channel = message.substring(message.indexOf("#"));
+            channel = channel.substring(0, channel.indexOf(":") - 1);
+            String realMessage = message.split(":")[2];
+
+            TextArea textArea = textAreaForChannel.get(channel);
+            if (textArea != null) {
+                textArea.appendText(username + "|" + realMessage + newLine);
+            }
+        } else {
+            TextArea textArea = textAreaForChannel.get(currentChannel);
+            textArea.appendText(message);
+        }
+    }
+
+    public class CurrentLineReceiver implements Runnable {
         private volatile String currentLine;
 
         protected Thread thread;
-        protected String threadName = "LineUpdaterThread";
-
-        public synchronized String getCurrentLine() {
-            return currentLine;
-        }
-
-        public void start() {
-            if (thread == null) {
-                thread = new Thread(this, threadName);
-                thread.setDaemon(true);
-                thread.start();
-                System.out.println("Line-reader thread started.");
-            }
-        }
+        protected String threadName = "LineReceiverThread";
 
         @Override
         public void run() {
             while ((currentLine = connection.readFromBuffer()) != null) {
-                TextArea textArea = textAreaForChannel.get(currentChannel);
-                textArea.appendText(currentLine + newLine);
+                displayMessageOnChannel(getCurrentLine());
             }
+        }
+
+        public void start() {
+            System.out.println("Starting line-receiver thread.");
+            if (thread == null) {
+                thread = new Thread(this, threadName);
+                thread.setDaemon(true);
+                thread.start();
+                System.out.println("Line-receiver thread started.");
+            }
+        }
+
+        public synchronized String getCurrentLine() {
+            return currentLine;
         }
     }
 }
